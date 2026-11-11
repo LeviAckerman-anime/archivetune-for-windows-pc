@@ -36,6 +36,7 @@ compose.desktop {
             // Needed so the bundled runtime includes java.net.http (lyrics, YouTube account API).
             includeAllModules = true
             windows {
+                console = true // shows a console window with errors; set to false once everything works
                 shortcut = true
                 menuGroup = "TuneDesk"
                 dirChooser = true
