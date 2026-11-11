@@ -40,7 +40,31 @@ import kotlinx.coroutines.withContext
 import java.net.URL
 import javax.imageio.ImageIO
 
-fun main() = application {
+private fun reportCrash(t: Throwable) {
+    val log = java.io.File(System.getProperty("user.home"), ".tunedesk/crash.log")
+    runCatching {
+        log.parentFile.mkdirs()
+        log.appendText("${java.time.LocalDateTime.now()}\n${t.stackTraceToString()}\n\n")
+    }
+    runCatching {
+        javax.swing.JOptionPane.showMessageDialog(
+            null,
+            "TuneDesk crashed:\n${t::class.simpleName}: ${t.message}\n\nDetails saved to:\n${log.absolutePath}",
+            "TuneDesk", javax.swing.JOptionPane.ERROR_MESSAGE,
+        )
+    }
+}
+
+fun main() {
+    Thread.setDefaultUncaughtExceptionHandler { _, e -> reportCrash(e) }
+    try {
+        runApp()
+    } catch (t: Throwable) {
+        reportCrash(t)
+    }
+}
+
+private fun runApp() = application {
     Window(
         onCloseRequest = ::exitApplication,
         title = "TuneDesk",

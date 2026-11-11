@@ -22,14 +22,19 @@ private val AUDIO_EXT = setOf("mp3", "flac", "m4a", "aac", "ogg", "opus", "wav",
 
 /** Thin wrapper around a vlcj MediaPlayer. Requires VLC (64-bit) installed. */
 class Player(onFinished: () -> Unit) {
-    val available: Boolean = NativeDiscovery().discover()
-
-    private val mp: MediaPlayer? =
-        if (available) MediaPlayerFactory("--no-video").mediaPlayers().newMediaPlayer().also {
-            it.events().addMediaPlayerEventListener(object : MediaPlayerEventAdapter() {
-                override fun finished(mediaPlayer: MediaPlayer) = onFinished()
-            })
+    // Any failure here (VLC missing, wrong 32/64-bit, native load error) just disables playback
+    // instead of crashing the whole app.
+    private val mp: MediaPlayer? = runCatching {
+        if (NativeDiscovery().discover()) {
+            MediaPlayerFactory("--no-video").mediaPlayers().newMediaPlayer().also {
+                it.events().addMediaPlayerEventListener(object : MediaPlayerEventAdapter() {
+                    override fun finished(mediaPlayer: MediaPlayer) = onFinished()
+                })
+            }
         } else null
+    }.getOrNull()
+
+    val available: Boolean = mp != null
 
     fun play(mrl: String) { mp?.media()?.play(mrl) }
     fun setPaused(paused: Boolean) { mp?.controls()?.setPause(paused) }
